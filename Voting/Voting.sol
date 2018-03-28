@@ -5,6 +5,8 @@ contract Voting{
     Candidate[] candidates;
     mapping(address => Voter) voters;
     uint maxVotes = 0; //the maximum number of votes for an canadidate
+    address pollOwner;
+    bool active;
 
     struct Candidate{
         uint id;
@@ -19,8 +21,13 @@ contract Voting{
 
     /*Takes the array of candidates and creates a Candidate object for each canadidate in the array
         sets id, name and numberOfVotes for each candidate
-        pushes the object to the array of canadidate objects*/
+        pushes the object to the array of canadidate objects
+        sets the owner of the poll*/
     function Voting(bytes32[] myCandidates) public {
+        
+        pollOwner = msg.sender;
+        active = true;
+        
         for(uint i = 0; i < myCandidates.length; i++){
             candidates.push(Candidate({
                 id : i,
@@ -29,10 +36,22 @@ contract Voting{
             }));
         }
     }
+    
+    /* checks if the sender is the owner of the poll/contract or not */
+    modifier isOwner(){
+        require(msg.sender == pollOwner);
+        _;
+    }
 
     /* Checks if the sender of the vote has voted before*/
     modifier canVote(){
         require(voters[msg.sender].hasVoted == false);
+        _;
+    }
+    
+    /* checks if the poll is still active meaning voters can still vote */
+    modifier isActive(){
+        require(active == true);
         _;
     }
 
@@ -54,7 +73,7 @@ contract Voting{
     changes voted status of the voter and sets the id of the candidate it has voted for
     increments the number of votes for said candidate by 1
     changes maxVotes value if it is required */
-    function vote(uint _candidate) public canVote() payable{
+    function vote(uint _candidate) isActive() canVote() public payable{
         voters[msg.sender] = Voter({
             hasVoted : true,
             vote : _candidate
@@ -73,7 +92,7 @@ contract Voting{
     }
 
     /*compares the total votes for each candidate and returns the candidate name with the largest number of votes*/
-    function winner() public view returns(string){
+    function winner() private view returns(string){
         bytes32 winning;
         for(uint i = 0; i < candidates.length; i++){
             if(candidates[i].numberOfVotes == maxVotes){
@@ -85,7 +104,7 @@ contract Voting{
 
     /* returns a list of winners as it is possible for multiple candidates to have the same number of votes
     each candidate name is separate by a comma for easy reading and parsing later */
-    function winners() public view returns(string){
+    function winners() private view returns(string){
         string memory winning;
         for(uint i = 0; i < candidates.length; i++){
             if(candidates[i].numberOfVotes == maxVotes){
@@ -97,8 +116,15 @@ contract Voting{
     }
 
     /* returns the maximum number of votes for any candidate*/
-    function getMaxVotes() public view returns(uint){
+    function getMaxVotes() private view returns(uint){
         return maxVotes;
+    }
+    
+    /* stops anyone from voting and returns the winners of the poll
+        this can only be done by the owner of the poll/contracts */
+    function endsVote() isOwner() public returns(string){
+        active = false;
+        return winners();
     }
 
     /* returns what candidate an address has voted for if the address has voted
