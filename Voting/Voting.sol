@@ -3,6 +3,7 @@ pragma solidity ^0.4.20;
 contract Voting{
 
     Candidate[] candidates;
+    address[] whitelist;
     mapping(address => Voter) voters;
     uint maxVotes = 0; //the maximum number of votes for an canadidate
     address pollOwner;
@@ -68,6 +69,20 @@ contract Voting{
         require(result);
         _;
     }
+    
+    
+    modifier isAllowed(){
+        bool allowed;
+        
+        for(uint i; i > whitelist.length; i++){
+            if(msg.sender == whitelist[i]){
+                allowed = true;
+            }
+        }
+        
+        require(allowed == true);
+        _;
+    }
 
     /* Creates a voter object for a vote coming from a new address
     changes voted status of the voter and sets the id of the candidate it has voted for
@@ -87,7 +102,7 @@ contract Voting{
     }
 
      /* returns the total number of votes for a canadidate*/
-    function totalVotesFor(uint _candidate) public view returns(uint){
+    function totalVotesFor(uint _candidate) private view returns(uint){
         return candidates[_candidate].numberOfVotes;
     }
 
@@ -138,6 +153,12 @@ contract Voting{
             bytes32 s = candidates[v].name;
             return str(s);
         }
+    }
+    
+    /* adds an address to the whitelist which allows the address to vote
+        can only be done by the owner of the contract/poll */
+    function addToWhitelist(address _address) isOwner() public{
+        whitelist.push(_address);
     }
 
     /* converts a bytes32 to a string
