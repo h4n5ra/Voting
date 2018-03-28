@@ -70,7 +70,7 @@ contract Voting{
         _;
     }
     
-    
+    /* checks if the address that wants to vote is in the whitelist */
     modifier isAllowed(){
         bool allowed;
         
@@ -88,7 +88,7 @@ contract Voting{
     changes voted status of the voter and sets the id of the candidate it has voted for
     increments the number of votes for said candidate by 1
     changes maxVotes value if it is required */
-    function vote(uint _candidate) isActive() canVote() public payable{
+    function vote(uint _candidate) isActive() isAllowed() canVote() public payable{
         voters[msg.sender] = Voter({
             hasVoted : true,
             vote : _candidate
@@ -145,7 +145,7 @@ contract Voting{
     /* returns what candidate an address has voted for if the address has voted
     otherwise returns that the address has not voted for anything yet
     keeps voting public but anonymous as no one knows who the address belongs to*/
-    function votedFor(address _voter) public view returns(string){
+    function votedFor(address _voter) isAllowed() public view returns(string){
         if(voters[_voter].hasVoted == false){
             return "You have not voted yet";
         }else{
