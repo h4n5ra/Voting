@@ -28,6 +28,7 @@ contract Voting{
         
         pollOwner = msg.sender;
         active = true;
+        whitelist.push(msg.sender);
         
         for(uint i = 0; i < myCandidates.length; i++){
             candidates.push(Candidate({
